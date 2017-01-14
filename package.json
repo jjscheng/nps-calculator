@@ -1,8 +1,8 @@
 {
-  "name": "nps-calculator",
+  "name": "nps-stats",
   "version": "1.0.0",
   "description": "Client-side application to identify outliers from a Net Promoter Score (NPS) dataset.",
-  "main": "index.js",
+  "main": "nps-stats.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "http-server"
