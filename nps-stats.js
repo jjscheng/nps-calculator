@@ -24,9 +24,43 @@
 
   var NPS = {};
 
-  // Calculate the Net Promoter Score (NPS) for a tally
-  NPS.score = function(obj) {
-    var t = (obj instanceof Array) ? NPS.tally(obj) : obj;
+  // Return a tally of raw scores along with the group NPS score.
+  NPS.tally = function(arr, props) {
+
+    // default values for properties
+    props = props ||
+      { promoters:  "promoters",
+        detractors: "detractors",
+        neutrals:   "neutrals",
+        nps:        "nps"
+      };
+
+    var p = 0, d = 0, n = 0;
+    for (var i = 0; i < arr.length; i++) {
+      var s = arr[i];
+      if (typeof s === 'object') {
+        p += s[props.promoters]  || 0;
+        d += s[props.detractors] || 0;
+        n += s[props.neutrals]   || 0;
+        s  = s[props.nps]        || s;
+      }
+      if (typeof s === 'number' && s >= 0 || s <= 10) {
+        if (s >= 9) { p++; continue; };
+        if (s <= 6) { d++; continue; };
+        if (s == 7 || s == 8) { n++; continue; };
+      } else continue; // skip invalid records
+    };
+    return {
+        promoters:  p,
+        detractors: d,
+        neutrals:   n,
+        total:      p + d + n,
+    };
+  }
+
+  // Calculate the Net Promoter Score (NPS) for a tally, an array of raw scores
+  // or an array of tallies.
+  NPS.score = function(t) {
     return t.score || ((t.promoters - t.detractors) / t.total);
   };
 
@@ -40,6 +74,7 @@
 
   // Calculate the standard deviation for the population
   NPS.stddev = function(t) {
+    t.variance = t.variance || NPS.variance(t);
     return Math.sqrt(NPS.variance(t));
   }
 
@@ -49,35 +84,12 @@
     return t.stddev / Math.sqrt(t.total);
   }
 
-  // Return a tally of raw scores along with the group NPS score.
-  NPS.tally = function(scores) {
-    var p = 0, d = 0, n = 0;
-    for (var i = 0; i < scores.length; i++) {
-      var s = scores[i];
-      if (typeof s != 'number' || s < 0 || s > 10) continue; // skip invalid values
-      if (s >= 9) { p++; continue; };
-      if (s <= 6) { d++; continue; };
-      if (s == 7 || s == 8) { n++ };
-    };
-    var tally = {
-        promoters:  p,
-        detractors: d,
-        neutrals:   n,
-        total:      p + d + n,
-    };
-    tally.score = NPS.score(tally);
-    return tally;
-  }
-
-  // Return the variance, standard deviation and standard error for tallied scores
+  // Return the variance, standard deviation and standard error in a single object call
   NPS.stats = function(t) {
-    var variance  = t.variance  || NPS.variance(t);
-    var stddev    = t.stddev    || NPS.stddev(t);
-    var stderr    = t.stdderr   || NPS.stderr(t);
     return {
       variance: t.variance  || NPS.variance(t),
-      stddev:   stddev,
-      stderr:   stderr
+      stddev:   t.stddev    || NPS.stddev(t),
+      stderr:   t.stdderr   || NPS.stderr(t)
     };
   }
 
