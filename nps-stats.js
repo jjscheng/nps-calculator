@@ -44,22 +44,21 @@
         n += s[props.neutrals]   || 0;
         s  = s[props.nps]        || s;
       }
-      if (typeof s === 'number' && s >= 0 || s <= 10) {
-        if (s >= 9) { p++; continue; };
-        if (s <= 6) { d++; continue; };
-        if (s == 7 || s == 8) { n++; continue; };
-      } else continue; // skip invalid records
-    };
+      if (typeof s === 'number') {
+        if (s == 9 || s == 10) p++;
+        else if (s == 7 || s == 8) n++;
+        else if (s <= 6 && s >= 0) d++;
+      } // else skip invalid records
+    }
     return {
         promoters:  p,
         detractors: d,
         neutrals:   n,
-        total:      p + d + n,
+        total:      p + d + n
     };
-  }
+  };
 
-  // Calculate the Net Promoter Score (NPS) for a tally, an array of raw scores
-  // or an array of tallies.
+  // Calculate the Net Promoter Score (NPS) for a tally
   NPS.score = function(t) {
     return t.score || ((t.promoters - t.detractors) / t.total);
   };
@@ -76,13 +75,13 @@
   NPS.stddev = function(t) {
     t.variance = t.variance || NPS.variance(t);
     return Math.sqrt(NPS.variance(t));
-  }
+  };
 
   // Calculate the standard error for the sample
   NPS.stderr = function(t) {
     t.stddev = t.stddev || NPS.stddev(t);
     return t.stddev / Math.sqrt(t.total);
-  }
+  };
 
   // Return the variance, standard deviation and standard error in a single object call
   NPS.stats = function(t) {
@@ -91,7 +90,7 @@
       stddev:   t.stddev    || NPS.stddev(t),
       stderr:   t.stdderr   || NPS.stderr(t)
     };
-  }
+  };
 
   // Module return
   return NPS;
