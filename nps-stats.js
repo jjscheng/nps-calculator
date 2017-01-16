@@ -1,7 +1,5 @@
 ;(function (root, factory) {
 
-  'use strict';
-
   // UMD definition (umdjs returnExports)
   // Uses Node, AMD or browser globals to create a module.
   if (typeof define === 'function' && define.amd) {
@@ -19,21 +17,26 @@
 
 }(this, function () {
 
-  // Module exported methods
-  // -----------------------
+  'use strict';
 
   var NPS = {};
 
-  // Return a tally of raw scores along with the group NPS score.
-  NPS.tally = function(arr, props) {
+  // Return the NPS score along with a frequency distribution of scores.
+  // The arr parameter can be an array of values, an array of objects with a
+  // nps score property or an array of distributions.  Default property names
+  // can be overrwritten using a mapping in the props parameter.
+  NPS.dist = function(arr, props) {
 
-    // default values for properties
     props = props ||
-      { promoters:  "promoters",
+      { // if not provided, look in default params
+        promoters:  "promoters",
         detractors: "detractors",
         neutrals:   "neutrals",
         nps:        "nps"
       };
+
+    // Wrap single object input as an array of one element
+    if (!(arr instanceof Array)) { arr = [arr] }
 
     var p = 0, d = 0, n = 0;
     for (var i = 0; i < arr.length; i++) {
@@ -48,47 +51,43 @@
         if (s == 9 || s == 10) p++;
         else if (s == 7 || s == 8) n++;
         else if (s <= 6 && s >= 0) d++;
-      } // else skip invalid records
+      } // else skip records missing properties or having out-of-range values
     }
+
     return {
         promoters:  p,
         detractors: d,
         neutrals:   n,
-        total:      p + d + n
+        total:      (p + n + d),
+        score:      (p - d) / (p + n + d)
     };
   };
 
-  // Calculate the Net Promoter Score (NPS) for a tally
-  NPS.score = function(t) {
-    return t.score || ((t.promoters - t.detractors) / t.total);
-  };
+  // Convenience method to return the NPS score only
+  NPS.score = function(arr, props) { return NPS.dist(arr, props).score; };
 
-  // Calculate the NPS variance for a tally
-  NPS.variance = function(t) {
-    var score = t.score || NPS.score(t);
-    return ((Math.pow(+1 - score, 2) * t.promoters)
-          + (Math.pow(-1 - score, 2) * t.detractors)
-          + (Math.pow(+0 - score, 2) * t.neutrals)) / t.total;
-  };
+  // Return the variance, standard deviation and standard error for an
+  // NPS distribution
+  NPS.stats = function(arr, props) {
 
-  // Calculate the standard deviation for the population
-  NPS.stddev = function(t) {
-    t.variance = t.variance || NPS.variance(t);
-    return Math.sqrt(NPS.variance(t));
-  };
+    var dist = NPS.dist(arr, props);
+    var score = dist.score;
+    var variance =
+       ((Math.pow(+1 - score, 2) * dist.promoters)
+      + (Math.pow(-1 - score, 2) * dist.detractors)
+      + (Math.pow(+0 - score, 2) * dist.neutrals)) / dist.total;
+    var stddev = Math.sqrt(variance);
+    var stderr = stddev / Math.sqrt(dist.total);
 
-  // Calculate the standard error for the sample
-  NPS.stderr = function(t) {
-    t.stddev = t.stddev || NPS.stddev(t);
-    return t.stddev / Math.sqrt(t.total);
-  };
-
-  // Return the variance, standard deviation and standard error in a single object call
-  NPS.stats = function(t) {
     return {
-      variance: t.variance  || NPS.variance(t),
-      stddev:   t.stddev    || NPS.stddev(t),
-      stderr:   t.stdderr   || NPS.stderr(t)
+      promoters:  dist.promoters,
+      detractors: dist.detractors,
+      neutrals:   dist.neutrals,
+      total:      dist.total,
+      score:      score,
+      variance:   variance,
+      stddev:     stddev,
+      stderr:     stderr
     };
   };
 
