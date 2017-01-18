@@ -24,7 +24,7 @@
   // Return the NPS score along with a frequency distribution of scores.
   // The arr parameter can be an array of values, an array of objects with a
   // nps score property or an array of distributions.  Default property names
-  // can be overrwritten using a mapping in the props parameter.
+  // can be overwritten using a mapping in the props parameter.
   NPS.dist = function(arr, props) {
 
     props = props ||
@@ -59,23 +59,23 @@
         detractors: d,
         neutrals:   n,
         total:      (p + n + d),
-        score:      (p - d) / (p + n + d)
+        nps:        (p - d) / (p + n + d)
     };
   };
 
   // Convenience method to return the NPS score only
-  NPS.score = function(arr, props) { return NPS.dist(arr, props).score; };
+  NPS.score = function(arr, props) { return NPS.dist(arr, props).nps; };
 
   // Return the variance, standard deviation and standard error for an
   // NPS distribution
   NPS.stats = function(arr, props) {
 
     var dist = NPS.dist(arr, props);
-    var score = dist.score;
+    var nps  = dist.nps;
     var variance =
-       ((Math.pow(+1 - score, 2) * dist.promoters)
-      + (Math.pow(-1 - score, 2) * dist.detractors)
-      + (Math.pow(+0 - score, 2) * dist.neutrals)) / dist.total;
+       ((Math.pow(+1 - nps, 2) * dist.promoters)
+      + (Math.pow(-1 - nps, 2) * dist.detractors)
+      + (Math.pow(+0 - nps, 2) * dist.neutrals)) / dist.total;
     var stddev = Math.sqrt(variance);
     var stderr = stddev / Math.sqrt(dist.total);
 
@@ -84,7 +84,7 @@
       detractors: dist.detractors,
       neutrals:   dist.neutrals,
       total:      dist.total,
-      score:      score,
+      nps:        nps,
       variance:   variance,
       stddev:     stddev,
       stderr:     stderr
