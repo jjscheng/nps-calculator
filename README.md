@@ -1,2 +1,3 @@
-# nps-calculator
-Client-side application to identify outliers from a Net Promoter Score (NPS) dataset.
+# nps-stats
+Library that implements statistical functions to describe a data set of Net Promoter Score (NPS) survey data.
+
