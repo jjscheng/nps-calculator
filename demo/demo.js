@@ -4,21 +4,6 @@ var nps   = require('../src/nps-stats'),
     $     = require('jquery'),
     Highcharts = require('highcharts/highstock');
 
-// calculate NPS
-function npsScore(d) {
-  return (+d.promoters / +d.total) - (+d.detractors / +d.total);
-}
-
-// calculate NPS variance
-function npsVariance(d) {
-
-  var nps = npsScore(d);
-
-  return  Math.pow(+1 - nps, 2) * (+d.promoters  / +d.total)
-    +   Math.pow(+0 - nps, 2) * (+d.passives   / +d.total)
-    +   Math.pow(-1 - nps, 2) * (+d.detractors / +d.total);
-}
-
 // format chart data
 function seriesData(rows, series) {
 
@@ -68,48 +53,31 @@ $("document").ready(function() {
       },
       complete: function(results) {
 
-        // SCOPE VARIABLES FOR PROCESSING
-        var sample = {
-          promoters:  0,
-          passives:   0,
-          detractors: 0,
-          total:      0,
-          nps:        0,
-          stddev:     0,
-          variance:   0
-        };
-
-        // SUMMARISE PERFORMANCE FOR SAMPLE
-        _.each(results.data, function(d) {
-
-          // collect totals
-          d.total = +d.total || +d.promoters + +d.passives + +d.detractors;
-
-          // produce summary statistics for std err calculations
-          sample.promoters    += +d.promoters;
-          sample.passives     += +d.passives;
-          sample.detractors   += +d.detractors;
-          sample.total        += +d.total;
-
-        });
-
-        sample.nps = npsScore(sample);
-        sample.variance = npsVariance(sample);
-        sample.stddev = Math.sqrt(sample.variance);
+        var stats = nps.stats(results.data,
+          {
+            promoters:  'promoters',
+            neutrals:   'passives',
+            detractors: 'detractors'
+          });
 
         // SEGMENT INDIVIDUALS INTO OUTLIER SERIES
         rows = _.map(results.data, function(d) {
 
-          var stderr  = sample.stddev / Math.sqrt(d.total);
-          var nps     = npsScore(d);
-          var lcl     = Math.max(sample.nps - (1.96 * stderr), -1);
-          var ucl     = Math.min(sample.nps + (1.96 * stderr), +1);
-          var series  = (nps > ucl) ? "Outperform" : ((nps < lcl) ? "Underperform" : "Average");
+          var dist = nps.dist(d,
+            {
+              promoters:  'promoters',
+              neutrals:   'passives',
+              detractors: 'detractors'
+            });
+          var stderr  = stats.stddev / Math.sqrt(dist.total);
+          var lcl     = Math.max(stats.nps - (1.96 * stderr), -1);
+          var ucl     = Math.min(stats.nps + (1.96 * stderr), +1);
+          var series  = (dist.nps > ucl) ? "Outperform" : ((dist.nps < lcl) ? "Underperform" : "Average");
 
           return {
             label:  d.slicer,
-            total:  d.total,
-            nps:    nps ,
+            total:  dist.total,
+            nps:    dist.nps ,
             stderr: stderr,
             lcl:    lcl,
             ucl:    ucl,
@@ -133,11 +101,11 @@ $("document").ready(function() {
         );
 
         // calculate the standard errors based on the x-values
-        var xserr   = _.map(xs, function(x) {return sample.stddev / Math.sqrt(x)});
+        var xserr   = _.map(xs, function(x) {return stats.stddev / Math.sqrt(x)});
 
         // calculate the lower and upper confidence limits
-        var lcl     = _.map(xserr, function(xerr) { return Math.max(sample.nps - (1.96 * xerr),-1);});
-        var ucl     = _.map(xserr, function(xerr) { return Math.min(sample.nps + (1.96 * xerr), 1);});
+        var lcl     = _.map(xserr, function(xerr) { return Math.max(stats.nps - (1.96 * xerr),-1);});
+        var ucl     = _.map(xserr, function(xerr) { return Math.min(stats.nps + (1.96 * xerr), 1);});
         var lcldata = _.zip(xs, lcl);
         var ucldata = _.zip(xs, ucl);
 
