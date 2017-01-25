@@ -27,13 +27,14 @@
   // can be overwritten using a mapping in the props parameter.
   NPS.dist = function(arr, props) {
 
-    props = props ||
+    var __props =
       { // if not provided, look in default params
         promoters:  "promoters",
         detractors: "detractors",
         neutrals:   "neutrals",
         nps:        "nps"
       };
+    for(var key in props) __props[key] = props[key];
 
     // Wrap single object input as an array of one element
     if (!(arr instanceof Array)) { arr = [arr] }
@@ -42,10 +43,10 @@
     for (var i = 0; i < arr.length; i++) {
       var s = arr[i];
       if (typeof s === 'object') {
-        p += s[props.promoters]  || 0;
-        d += s[props.detractors] || 0;
-        n += s[props.neutrals]   || 0;
-        s  = s[props.nps]        || s;
+        p += s[__props.promoters]  || 0;
+        d += s[__props.detractors] || 0;
+        n += s[__props.neutrals]   || 0;
+        s  = s[__props.nps]        || s;
       }
       if (typeof s === 'number') {
         if (s == 9 || s == 10) p++;

@@ -53,22 +53,12 @@ $("document").ready(function() {
       },
       complete: function(results) {
 
-        var stats = nps.stats(results.data,
-          {
-            promoters:  'promoters',
-            neutrals:   'passives',
-            detractors: 'detractors'
-          });
+        var stats = nps.stats(results.data, { neutrals: 'passives' });
 
         // SEGMENT INDIVIDUALS INTO OUTLIER SERIES
         rows = _.map(results.data, function(d) {
 
-          var dist = nps.dist(d,
-            {
-              promoters:  'promoters',
-              neutrals:   'passives',
-              detractors: 'detractors'
-            });
+          var dist = nps.dist(d, { neutrals: 'passives' });
           var stderr  = stats.stddev / Math.sqrt(dist.total);
           var lcl     = Math.max(stats.nps - (1.96 * stderr), -1);
           var ucl     = Math.min(stats.nps + (1.96 * stderr), +1);
